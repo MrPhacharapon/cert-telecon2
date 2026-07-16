@@ -23,6 +23,7 @@ body {
   font-family: 'Noto Sans Thai', sans-serif;
   /* Lemonade Promax Background */
   background: linear-gradient(135deg, #fef08a 0%, #fde047 50%, #d9f99d 100%);
+  background-attachment: fixed;
   color: var(--text-main);
   min-height: 100vh;
   display: flex;
