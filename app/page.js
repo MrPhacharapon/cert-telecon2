@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Papa from "papaparse";
 import { Download, Search, FileText, CheckCircle, AlertCircle, Loader2, Lock, X } from "lucide-react";
-import { PDFDocument } from "pdf-lib";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -38,8 +36,14 @@ export default function Home() {
 
   // Fetch config on load
   useEffect(() => {
-    fetch('/api/config')
-      .then(res => res.json())
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+    
+    fetch('/api/config', { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.json();
+      })
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           setSessions(data);
@@ -50,9 +54,10 @@ export default function Home() {
       })
       .catch(err => {
         console.error("Error fetching config:", err);
-        setConfigError("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
+        setConfigError("การเชื่อมต่อฐานข้อมูลล้มเหลว หรืออินเทอร์เน็ตช้าเกินไป กรุณารีเฟรชหน้าเว็บใหม่อีกครั้ง");
       })
       .finally(() => {
+        clearTimeout(timeoutId);
         setIsConfigLoading(false);
       });
   }, []);
@@ -71,7 +76,10 @@ export default function Home() {
         }
         return res.text();
       })
-      .then(csvText => {
+      .then(async (csvText) => {
+        // Dynamically import PapaParse to reduce initial load time
+        const Papa = (await import('papaparse')).default;
+        
         // Parse the entire CSV as a 2D array of strings to bypass ANY line-ending issues
         Papa.parse(csvText, {
           header: false,
@@ -175,6 +183,9 @@ export default function Home() {
     setDownloadSuccess(false);
     
     try {
+      // Dynamically import PDFDocument to reduce initial load time
+      const { PDFDocument } = await import('pdf-lib');
+      
       // Find the corresponding PDF URL from the session config
       const matchedPdf = selectedSession.pdfFiles?.find(
         (pdf) => pdf.filename === selectedParticipant.fileName
