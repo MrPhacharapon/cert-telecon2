@@ -73,8 +73,10 @@ export default function Home() {
       })
       .then(csvText => {
         // Handle Google Sheets where the first row might be a title instead of headers
-        let lines = csvText.split('\\n');
-        const headerIndex = lines.findIndex(line => line.includes('ชื่อ - สกุล'));
+        let lines = csvText.split(/\\r?\\n|\\r/);
+        
+        // Find header index more robustly
+        const headerIndex = lines.findIndex(line => line.includes('ชื่อ') && line.includes('สกุล'));
         
         if (headerIndex > 0) {
           lines = lines.slice(headerIndex);
@@ -90,17 +92,28 @@ export default function Home() {
           complete: (results) => {
             let lastFileName = "";
             const processed = results.data
-              .filter(row => row["ชื่อ - สกุล "] || row["ชื่อ - สกุล"]) // Handle with or without trailing space
+              .filter(row => {
+                 // Find the actual key that contains "ชื่อ" and "สกุล"
+                 const keys = Object.keys(row);
+                 const nameKey = keys.find(k => k.includes('ชื่อ') && k.includes('สกุล'));
+                 return nameKey && row[nameKey] && row[nameKey].trim() !== "";
+              })
               .map((row) => {
-                const nameKey = row["ชื่อ - สกุล "] !== undefined ? "ชื่อ - สกุล " : "ชื่อ - สกุล";
-                if (row["ชื่อไฟล์ดาวโหลด"]) {
-                  lastFileName = row["ชื่อไฟล์ดาวโหลด"];
+                const keys = Object.keys(row);
+                const nameKey = keys.find(k => k.includes('ชื่อ') && k.includes('สกุล'));
+                const fileKey = keys.find(k => k.includes('ชื่อไฟล์'));
+                const pageKey = keys.find(k => k.includes('หน้า'));
+                const idKey = keys.find(k => k.includes('ทะเบียน'));
+                
+                if (fileKey && row[fileKey]) {
+                  lastFileName = row[fileKey];
                 }
+                
                 return {
-                  id: row["เลขทะเบียนคุม"] || "",
+                  id: (idKey ? row[idKey] : "") || "",
                   name: row[nameKey].trim(),
                   fileName: lastFileName,
-                  pageNumber: parseInt(row["หน้าที่"], 10) || 1
+                  pageNumber: parseInt(pageKey ? row[pageKey] : 1, 10) || 1
                 };
               });
             
