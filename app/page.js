@@ -19,7 +19,7 @@ export default function Home() {
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
-  
+  const [debugInfo, setDebugInfo] = useState(null);
   // Admin Login Modal State
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
@@ -65,7 +65,12 @@ export default function Home() {
     const proxyUrl = `/api/fetch-csv?url=${encodeURIComponent(selectedSession.sheetUrl)}`;
     
     fetch(proxyUrl)
-      .then(res => res.text())
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Proxy returned status ${res.status}: ${await res.text()}`);
+        }
+        return res.text();
+      })
       .then(csvText => {
         // Handle Google Sheets where the first row might be a title instead of headers
         let lines = csvText.split('\\n');
@@ -73,6 +78,8 @@ export default function Home() {
         
         if (headerIndex > 0) {
           lines = lines.slice(headerIndex);
+        } else if (headerIndex === -1) {
+          setDebugInfo(`[Warning] ไม่พบคอลัมน์ 'ชื่อ - สกุล' ในไฟล์ CSV ข้อมูลดิบที่โหลดมาคือ:\\n${csvText.substring(0, 150)}...`);
         }
         
         const cleanedCsvText = lines.join('\\n');
@@ -97,17 +104,25 @@ export default function Home() {
                 };
               });
             
+            if (processed.length === 0) {
+               setDebugInfo(`[Warning] โหลดสำเร็จ แต่ไม่พบชื่อคนในระบบเลย (กรองจาก ${results.data.length} บรรทัด)\\nตัวอย่างบรรทัดแรก: ${JSON.stringify(results.data[0])}`);
+            } else {
+               setDebugInfo(`[Success] โหลดข้อมูลเสร็จสิ้น พบรายชื่อทั้งหมด ${processed.length} คน (จาก CSV ${results.data.length} บรรทัด)`);
+            }
+            
             setParticipants(processed);
             setIsLoading(false);
           },
           error: (err) => {
             console.error("Error parsing CSV:", err);
+            setDebugInfo(`[PapaParse Error] ${err.message}`);
             setIsLoading(false);
           }
         });
       })
       .catch(err => {
         console.error("Error fetching CSV:", err);
+        setDebugInfo(`[Fetch Error] ${err.message}`);
         setIsLoading(false);
       });
   }, [selectedSession]);
@@ -302,6 +317,11 @@ export default function Home() {
             ) : (
               <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                 ไม่พบรายชื่อที่ค้นหา
+                {debugInfo && (
+                  <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', fontSize: '0.85rem', textAlign: 'left', wordBreak: 'break-all' }}>
+                    <strong>Log:</strong> {debugInfo}
+                  </div>
+                )}
               </div>
             )}
           </div>
