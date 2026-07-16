@@ -36,30 +36,39 @@ export default function Home() {
 
   // Fetch config on load
   useEffect(() => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
-    
-    fetch('/api/config', { signal: controller.signal })
-      .then(res => {
-        if (!res.ok) throw new Error("Network response was not ok");
-        return res.json();
-      })
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setSessions(data);
-          setSelectedSession(data[0]);
-        } else {
-          setConfigError("ยังไม่มีข้อมูลการอบรมในระบบ");
-        }
-      })
-      .catch(err => {
-        console.error("Error fetching config:", err);
-        setConfigError("การเชื่อมต่อฐานข้อมูลล้มเหลว หรืออินเทอร์เน็ตช้าเกินไป กรุณารีเฟรชหน้าเว็บใหม่อีกครั้ง");
-      })
-      .finally(() => {
-        clearTimeout(timeoutId);
-        setIsConfigLoading(false);
-      });
+    try {
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutId = setTimeout(() => {
+        if (controller) controller.abort();
+      }, 15000); // 15 seconds timeout
+      
+      const fetchOptions = controller ? { signal: controller.signal } : {};
+      
+      // Add timestamp to prevent aggressive Safari caching
+      fetch(`/api/config?t=${Date.now()}`, fetchOptions)
+        .then(res => {
+          if (!res.ok) throw new Error("Network response was not ok");
+          return res.json();
+        })
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setSessions(data);
+            setSelectedSession(data[0]);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching config:", err);
+          setConfigError(`ไม่สามารถดึงข้อมูลได้: ${err.message || "เน็ตช้าเกินไป"}`);
+        })
+        .finally(() => {
+          clearTimeout(timeoutId);
+          setIsConfigLoading(false);
+        });
+    } catch (err) {
+      console.error("Sync error in useEffect:", err);
+      setConfigError(`เกิดข้อผิดพลาดในระบบมือถือรุ่นเก่า: ${err.message}`);
+      setIsConfigLoading(false);
+    }
   }, []);
 
   // Fetch participants when a session is selected
