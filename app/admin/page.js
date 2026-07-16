@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Plus, Trash2, Link as LinkIcon, FileText, Settings, AlertTriangle } from "lucide-react";
+import { Save, Plus, Trash2, Link as LinkIcon, FileText, Settings, AlertTriangle, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
+  const router = useRouter();
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -104,7 +106,32 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="glass-card" style={{ maxWidth: '900px', margin: '0 auto' }}>
+    <div className="glass-card" style={{ maxWidth: '900px', margin: '0 auto', position: 'relative' }}>
+      <button 
+        onClick={() => router.push('/')}
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          background: 'rgba(255, 255, 255, 0.5)',
+          border: '1px solid rgba(255,255,255,0.8)',
+          borderRadius: '2rem',
+          padding: '0.4rem 0.8rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          fontSize: '0.8rem',
+          color: '#ef4444',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+        }}
+        onMouseOver={e => e.currentTarget.style.background = 'rgba(254, 226, 226, 0.8)'}
+        onMouseOut={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)'}
+      >
+        <LogOut size={14} /> ออกจากระบบ
+      </button>
+
       <div className="header">
         <h1><Settings size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '8px' }}/> ระบบจัดการข้อมูล (Admin)</h1>
         <p>จัดการหัวข้อการอบรมและลิงก์ข้อมูลต่างๆ</p>
