@@ -62,8 +62,13 @@ export default function Home() {
     if (!selectedSession) return;
     
     setIsLoading(true);
+    let exportUrl = selectedSession.sheetUrl;
+    // Auto-convert Google Sheets view/edit link to CSV export link
+    if (exportUrl.includes('/edit') || exportUrl.includes('/view')) {
+      exportUrl = exportUrl.replace(/\\/(edit|view).*$/, '/export?format=csv');
+    }
     
-    fetch(selectedSession.sheetUrl)
+    fetch(exportUrl)
       .then(res => res.text())
       .then(csvText => {
         // Handle Google Sheets where the first row might be a title instead of headers
