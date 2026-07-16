@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic'; // Prevent caching
+export const revalidate = 60; // Cache the response for 60 seconds (ISR)
 
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwMImClKhKO9p7c1wfIvZ_4-HJ7Xw85BHnbVB-VnyOul_THS3MFxltqASaBLjCVOhcQbw/exec";
 
 export async function GET() {
   try {
-    const res = await fetch(GAS_URL, { cache: 'no-store' });
+    const res = await fetch(GAS_URL, { 
+      next: { revalidate: 60 } // Cache fetch for 60 seconds
+    });
     const text = await res.text();
     let data;
     try {
