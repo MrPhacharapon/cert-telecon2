@@ -11,7 +11,16 @@ export async function GET(request) {
   }
 
   try {
-    const response = await fetch(pdfUrl, { cache: 'no-store' });
+    // Automatically convert Google Drive view links to direct download links
+    let fetchUrl = pdfUrl;
+    if (pdfUrl.includes('drive.google.com')) {
+      const idMatch = pdfUrl.match(/[-\w]{25,}/);
+      if (idMatch) {
+        fetchUrl = `https://drive.google.com/uc?export=download&id=${idMatch[0]}`;
+      }
+    }
+
+    const response = await fetch(fetchUrl, { cache: 'no-store' });
     if (!response.ok) throw new Error(`Failed to fetch PDF: ${response.statusText}`);
     
     // Return the PDF buffer directly
