@@ -62,36 +62,53 @@ export default function Home() {
     if (!selectedSession) return;
     
     setIsLoading(true);
-    // Use papaparse to fetch and parse the CSV
-    Papa.parse(selectedSession.sheetUrl, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        // Process data to handle merged cells (fill down filenames)
-        let lastFileName = "";
-        const processed = results.data
-          .filter(row => row["ชื่อ - สกุล "]) // Filter out empty rows
-          .map((row) => {
-            if (row["ชื่อไฟล์ดาวโหลด"]) {
-              lastFileName = row["ชื่อไฟล์ดาวโหลด"];
-            }
-            return {
-              id: row["เลขทะเบียนคุม"],
-              name: row["ชื่อ - สกุล "].trim(),
-              fileName: lastFileName,
-              pageNumber: parseInt(row["หน้าที่"], 10)
-            };
-          });
+    
+    fetch(selectedSession.sheetUrl)
+      .then(res => res.text())
+      .then(csvText => {
+        // Handle Google Sheets where the first row might be a title instead of headers
+        let lines = csvText.split('\\n');
+        const headerIndex = lines.findIndex(line => line.includes('ชื่อ - สกุล'));
         
-        setParticipants(processed);
-        setIsLoading(false);
-      },
-      error: (err) => {
+        if (headerIndex > 0) {
+          lines = lines.slice(headerIndex);
+        }
+        
+        const cleanedCsvText = lines.join('\\n');
+        
+        Papa.parse(cleanedCsvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            let lastFileName = "";
+            const processed = results.data
+              .filter(row => row["ชื่อ - สกุล "] || row["ชื่อ - สกุล"]) // Handle with or without trailing space
+              .map((row) => {
+                const nameKey = row["ชื่อ - สกุล "] !== undefined ? "ชื่อ - สกุล " : "ชื่อ - สกุล";
+                if (row["ชื่อไฟล์ดาวโหลด"]) {
+                  lastFileName = row["ชื่อไฟล์ดาวโหลด"];
+                }
+                return {
+                  id: row["เลขทะเบียนคุม"] || "",
+                  name: row[nameKey].trim(),
+                  fileName: lastFileName,
+                  pageNumber: parseInt(row["หน้าที่"], 10) || 1
+                };
+              });
+            
+            setParticipants(processed);
+            setIsLoading(false);
+          },
+          error: (err) => {
+            console.error("Error parsing CSV:", err);
+            setIsLoading(false);
+          }
+        });
+      })
+      .catch(err => {
         console.error("Error fetching CSV:", err);
         setIsLoading(false);
-      }
-    });
+      });
   }, [selectedSession]);
 
   // Handle outside click for dropdown
