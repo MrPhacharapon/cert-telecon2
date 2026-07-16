@@ -327,9 +327,6 @@ export default function Home() {
                   <Search size={16} className="autocomplete-icon" />
                   <div>
                     <div style={{ fontWeight: 600 }}>{p.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      หน้าที่: {p.pageNumber} | ทะเบียน: {p.id}
-                    </div>
                   </div>
                 </div>
               ))
