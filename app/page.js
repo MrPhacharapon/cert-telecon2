@@ -72,55 +72,61 @@ export default function Home() {
         return res.text();
       })
       .then(csvText => {
-        // Handle Google Sheets where the first row might be a title instead of headers
-        let lines = csvText.split(/\\r?\\n|\\r/);
-        
-        // Find header index more robustly
-        const headerIndex = lines.findIndex(line => line.includes('ชื่อ') && line.includes('สกุล'));
-        
-        if (headerIndex > 0) {
-          lines = lines.slice(headerIndex);
-        } else if (headerIndex === -1) {
-          setDebugInfo(`[Warning] ไม่พบคอลัมน์ 'ชื่อ - สกุล' ในไฟล์ CSV ข้อมูลดิบที่โหลดมาคือ:\\n${csvText.substring(0, 150)}...`);
-        }
-        
-        const cleanedCsvText = lines.join('\\n');
-        
-        Papa.parse(cleanedCsvText, {
-          header: true,
+        // Parse the entire CSV as a 2D array of strings to bypass ANY line-ending issues
+        Papa.parse(csvText, {
+          header: false,
           skipEmptyLines: true,
           complete: (results) => {
+            const rows = results.data;
+            if (rows.length === 0) {
+              setDebugInfo(`[Warning] CSV ว่างเปล่า ไม่มีข้อมูลเลย`);
+              setIsLoading(false);
+              return;
+            }
+            
+            // Find the index of the row that acts as the header
+            const headerRowIndex = rows.findIndex(row => 
+              row.some(cell => typeof cell === 'string' && cell.includes('ชื่อ') && cell.includes('สกุล'))
+            );
+            
+            if (headerRowIndex === -1) {
+               setDebugInfo(`[Warning] ไม่พบคอลัมน์ 'ชื่อ - สกุล' ในไฟล์ CSV\\nตัวอย่างบรรทัดแรก: ${JSON.stringify(rows[0])}`);
+               setIsLoading(false);
+               return;
+            }
+            
+            const headerRow = rows[headerRowIndex];
+            const dataRows = rows.slice(headerRowIndex + 1);
+            
             let lastFileName = "";
-            const processed = results.data
+            const processed = dataRows
               .filter(row => {
-                 // Find the actual key that contains "ชื่อ" and "สกุล"
-                 const keys = Object.keys(row);
-                 const nameKey = keys.find(k => k.includes('ชื่อ') && k.includes('สกุล'));
-                 return nameKey && row[nameKey] && row[nameKey].trim() !== "";
+                 // Check if the cell corresponding to 'ชื่อ - สกุล' has a value
+                 const nameIndex = headerRow.findIndex(h => typeof h === 'string' && h.includes('ชื่อ') && h.includes('สกุล'));
+                 return nameIndex !== -1 && row[nameIndex] && row[nameIndex].trim() !== "";
               })
               .map((row) => {
-                const keys = Object.keys(row);
-                const nameKey = keys.find(k => k.includes('ชื่อ') && k.includes('สกุล'));
-                const fileKey = keys.find(k => k.includes('ชื่อไฟล์'));
-                const pageKey = keys.find(k => k.includes('หน้า'));
-                const idKey = keys.find(k => k.includes('ทะเบียน'));
+                const nameIndex = headerRow.findIndex(h => typeof h === 'string' && h.includes('ชื่อ') && h.includes('สกุล'));
+                const fileIndex = headerRow.findIndex(h => typeof h === 'string' && h.includes('ชื่อไฟล์'));
+                const pageIndex = headerRow.findIndex(h => typeof h === 'string' && h.includes('หน้า'));
+                const idIndex = headerRow.findIndex(h => typeof h === 'string' && h.includes('ทะเบียน'));
                 
-                if (fileKey && row[fileKey]) {
-                  lastFileName = row[fileKey];
+                if (fileIndex !== -1 && row[fileIndex] && row[fileIndex].trim() !== "") {
+                  lastFileName = row[fileIndex].trim();
                 }
                 
                 return {
-                  id: (idKey ? row[idKey] : "") || "",
-                  name: row[nameKey].trim(),
+                  id: (idIndex !== -1 ? row[idIndex] : "") || "",
+                  name: row[nameIndex].trim(),
                   fileName: lastFileName,
-                  pageNumber: parseInt(pageKey ? row[pageKey] : 1, 10) || 1
+                  pageNumber: parseInt(pageIndex !== -1 ? row[pageIndex] : 1, 10) || 1
                 };
               });
             
             if (processed.length === 0) {
-               setDebugInfo(`[Warning] โหลดสำเร็จ แต่ไม่พบชื่อคนในระบบเลย (กรองจาก ${results.data.length} บรรทัด)\\nตัวอย่างบรรทัดแรก: ${JSON.stringify(results.data[0])}`);
+               setDebugInfo(`[Warning] โหลดสำเร็จ แต่ไม่พบชื่อคนในระบบ (กรองจาก ${dataRows.length} บรรทัด)\\nHeader: ${JSON.stringify(headerRow)}\\nRow 1: ${JSON.stringify(dataRows[0])}`);
             } else {
-               setDebugInfo(`[Success] โหลดข้อมูลเสร็จสิ้น พบรายชื่อทั้งหมด ${processed.length} คน (จาก CSV ${results.data.length} บรรทัด)`);
+               setDebugInfo(`[Success] โหลดข้อมูลเสร็จสิ้น พบรายชื่อทั้งหมด ${processed.length} คน`);
             }
             
             setParticipants(processed);
@@ -329,8 +335,8 @@ export default function Home() {
               ))
             ) : (
               <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                ไม่พบรายชื่อที่ค้นหา
-                {debugInfo && (
+                ไม่พบรายชื่อที่ค้นหา หรือไม่พบรายชื่อผู้ที่ได้รับเกียรติบัตรอบรม
+                {debugInfo && !debugInfo.includes('[Success]') && (
                   <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', fontSize: '0.85rem', textAlign: 'left', wordBreak: 'break-all' }}>
                     <strong>Log:</strong> {debugInfo}
                   </div>
@@ -347,11 +353,7 @@ export default function Home() {
           <div className="cert-icon-container">
             {downloadSuccess ? <CheckCircle size={40} color="#10b981" /> : <FileText size={40} />}
           </div>
-          <div className="result-name">{selectedParticipant.name}</div>
-          <div className="result-detail">
-            ไฟล์: {selectedParticipant.fileName} <br/>
-            (หน้าที่ {selectedParticipant.pageNumber})
-          </div>
+          <div className="result-name" style={{ marginBottom: '1.5rem' }}>{selectedParticipant.name}</div>
           
           <button 
             className="btn btn-primary" 
@@ -360,7 +362,7 @@ export default function Home() {
             style={{ width: '100%', maxWidth: '300px' }}
           >
             {isDownloading ? (
-              <><Loader2 className="spinner" size={20} /> กำลังเตรียมไฟล์ PDF...</>
+              <><Loader2 className="spinner" size={20} /> กำลังเตรียมไฟล์ PDF...กรุณารอซักครู่</>
             ) : downloadSuccess ? (
               <><CheckCircle size={20} /> ดาวน์โหลดสำเร็จ</>
             ) : (
