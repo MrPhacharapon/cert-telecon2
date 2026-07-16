@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import Papa from "papaparse";
-import { Download, Search, FileText, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Download, Search, FileText, CheckCircle, AlertCircle, Loader2, Lock, X } from "lucide-react";
 import { PDFDocument } from "pdf-lib";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
   const [sessions, setSessions] = useState([]);
   const [isConfigLoading, setIsConfigLoading] = useState(true);
   const [configError, setConfigError] = useState("");
@@ -17,6 +19,20 @@ export default function Home() {
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  
+  // Admin Login Modal State
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminError, setAdminError] = useState("");
+
+  const handleAdminLogin = (e) => {
+    e.preventDefault();
+    if (adminPassword === "telecon1284") {
+      router.push("/admin");
+    } else {
+      setAdminError("รหัสผ่านไม่ถูกต้อง");
+    }
+  };
 
   const searchRef = useRef(null);
 
@@ -166,7 +182,32 @@ export default function Home() {
   };
 
   return (
-    <div className="glass-card">
+    <div className="glass-card" style={{ position: 'relative' }}>
+      <button 
+        onClick={() => setShowAdminModal(true)}
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          background: 'rgba(255, 255, 255, 0.5)',
+          border: '1px solid rgba(255,255,255,0.8)',
+          borderRadius: '2rem',
+          padding: '0.4rem 0.8rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          fontSize: '0.8rem',
+          color: 'var(--text-muted)',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+        }}
+        onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.9)'}
+        onMouseOut={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)'}
+      >
+        <Lock size={14} /> สำหรับ admin
+      </button>
+
       <div className="header">
         <h1>ระบบดาวน์โหลดเกียรติบัตร</h1>
         <h2 style={{ fontSize: '1.25rem', color: 'var(--text-main)', marginTop: '0.5rem', fontWeight: 600 }}>โครงการแลกเปลี่ยนเรียนรู้ด้วยระบบ Teleconference ครั้งที่ 2</h2>
@@ -284,6 +325,61 @@ export default function Home() {
         </div>
       )}
       </>
+      )}
+
+      {/* Admin Login Modal */}
+      {showAdminModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.4)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="glass-card" style={{ maxWidth: '400px', width: '90%', position: 'relative', animation: 'scaleIn 0.3s ease-out' }}>
+            <button 
+              onClick={() => {
+                setShowAdminModal(false);
+                setAdminPassword("");
+                setAdminError("");
+              }}
+              style={{
+                position: 'absolute',
+                top: '1rem', right: '1rem',
+                background: 'none', border: 'none',
+                cursor: 'pointer', color: 'var(--text-muted)'
+              }}
+            >
+              <X size={20} />
+            </button>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Lock size={20} /> ยืนยันสิทธิ์ผู้ดูแลระบบ
+            </h3>
+            <form onSubmit={handleAdminLogin}>
+              <div className="form-group">
+                <label className="form-label">รหัสผ่าน (Password)</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={adminPassword}
+                  onChange={(e) => {
+                    setAdminPassword(e.target.value);
+                    setAdminError("");
+                  }}
+                  placeholder="กรอกรหัสผ่านเพื่อเข้าหน้า admin"
+                  autoFocus
+                />
+              </div>
+              {adminError && <div style={{ color: '#dc2626', fontSize: '0.875rem', marginBottom: '1rem' }}>{adminError}</div>}
+              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+                เข้าสู่ระบบ
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
