@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --primary-color: #f59e0b; /* Amber/Orange gives a great contrast to yellow */
-  --primary-hover: #d97706;
-  --bg-gradient-start: #fef08a; /* Lemon yellow */
-  --bg-gradient-end: #d9f99d; /* Lime soft */
-  --text-main: #422006; /* Deep brown/orange for text */
-  --text-muted: #78350f;
-  --border-color: rgba(255, 255, 255, 0.7);
-  --shadow-sm: 0 4px 6px -1px rgba(234, 179, 8, 0.1), 0 2px 4px -1px rgba(234, 179, 8, 0.05);
-  --shadow-md: 0 10px 15px -3px rgba(234, 179, 8, 0.15), 0 4px 6px -2px rgba(234, 179, 8, 0.08);
-  --shadow-lg: 0 20px 25px -5px rgba(234, 179, 8, 0.2), 0 10px 10px -5px rgba(234, 179, 8, 0.1);
+  --primary-color: #f472b6; /* Pastel Pink */
+  --primary-hover: #db2777; /* Deeper Pink for hover */
+  --bg-gradient-start: #fff3b0; /* Pastel Yellow */
+  --bg-gradient-end: #ff9a9e; /* Pastel Pink */
+  --text-main: #4c1d95; /* Deep Purple for contrast */
+  --text-muted: #7c3aed; /* Muted Purple */
+  --border-color: rgba(255, 255, 255, 0.8);
+  --shadow-sm: 0 4px 6px -1px rgba(244, 114, 182, 0.15), 0 2px 4px -1px rgba(244, 114, 182, 0.1);
+  --shadow-md: 0 10px 15px -3px rgba(244, 114, 182, 0.2), 0 4px 6px -2px rgba(244, 114, 182, 0.12);
+  --shadow-lg: 0 20px 25px -5px rgba(244, 114, 182, 0.25), 0 10px 10px -5px rgba(244, 114, 182, 0.15);
 }
 
 * {
@@ -21,8 +21,8 @@
 
 body {
   font-family: 'Noto Sans Thai', sans-serif;
-  /* Lemonade Promax Background */
-  background: linear-gradient(135deg, #fef08a 0%, #fde047 50%, #d9f99d 100%);
+  /* Pastel Lemonade Gradient */
+  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
   background-attachment: fixed;
   color: var(--text-main);
   min-height: 100vh;
@@ -57,7 +57,7 @@ body::after {
   right: -10%;
   width: 60vw;
   height: 60vw;
-  background: rgba(163, 230, 53, 0.4);
+  background: rgba(244, 114, 182, 0.3);
 }
 
 .container {
